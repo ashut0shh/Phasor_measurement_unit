@@ -1,0 +1,28 @@
+module freq_scaler #(
+    parameter SCALE = 32'sd640000   // Fs/1024 in Q16.16
+)(
+    input wire clk,
+    input wire signed [31:0] freq_in,
+    input wire valid_in,
+
+    output reg signed [31:0] freq_hz,
+    output reg valid_out
+);
+
+reg signed [63:0] mult;
+
+always @(posedge clk) begin
+    if(valid_in) begin
+        // fixed-point multiply
+        mult <= freq_in * SCALE;
+
+        // remove fractional bits
+        freq_hz <= mult >>> 16;
+
+        valid_out <= 1'b1;
+    end
+    else
+        valid_out <= 1'b0;
+end
+
+endmodule

@@ -1,0 +1,24 @@
+	module shift_reg(
+	input clk,
+	input wire signed [15:0]pipe_out,
+	input wire pipe_valid,
+	output reg signed[15:0]shift_out[0:3],
+	output reg shift_valid);
+
+
+	reg [3:0]valid_pipe;
+	always @(posedge clk)begin
+	shift_out[0]<=pipe_out;
+	shift_out[1]<=shift_out[0];
+	shift_out[2]<=shift_out[1];
+	shift_out[3]<=shift_out[2];
+
+
+
+	valid_pipe[0]<=pipe_valid;
+	valid_pipe[1]<=valid_pipe[0];
+	valid_pipe[2]<=valid_pipe[1];
+	valid_pipe[3]<=valid_pipe[2];
+	shift_valid<=valid_pipe[3];
+	end
+	endmodule

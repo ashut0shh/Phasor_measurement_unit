@@ -1,0 +1,67 @@
+module lut_mac(
+    input  wire clk,
+    input  wire rst,
+    input  wire [8:0] addr,
+	 input  wire valid_in,
+    output reg signed [31:0] I_out,
+    output reg signed [31:0] Q_out,
+    output reg valid_out          // NEW
+);
+
+
+wire frame_done = (addr == 9'd511);
+
+
+wire signed [15:0] signal;
+wire signed [15:0] sin_wave;
+wire signed [15:0] cos_wave;
+
+wire [8:0] cos_addr = addr + 9'd128;
+
+signal_lut SIG(.clk(clk), .addr(addr), .sig_out(signal));
+sin_lut SIN(.clk(clk), .addr(addr), .sin_out(sin_wave));
+sin_lut COS(.clk(clk), .addr(cos_addr), .sin_out(cos_wave));
+
+reg signed [31:0] mult_I, mult_Q;
+
+always @(posedge clk) begin
+    mult_I <= signal * cos_wave;
+    mult_Q <= signal * sin_wave;
+end
+
+
+reg signed [47:0] acc_I, acc_Q;
+
+always @(posedge clk) begin
+    if (rst) begin
+        acc_I <= 0;
+        acc_Q <= 0;
+    end
+    else begin
+        acc_I <= acc_I + (mult_I >>> 15);
+        acc_Q <= acc_Q + (mult_Q >>> 15);
+    end
+end
+
+
+always @(posedge clk) begin
+    valid <= 0;   // default
+
+    if (rst) begin
+        I_out <= 0;
+        Q_out <= 0;
+    end
+    else if (frame_done) begin
+        // output NEW value
+        I_out <= acc_I[47:16];
+        Q_out <= acc_Q[47:16];
+
+        valid <= 1;     // <<< ONE-CLOCK PULSE
+
+
+        acc_I <= 0;
+        acc_Q <= 0;
+    end
+end
+
+endmodule

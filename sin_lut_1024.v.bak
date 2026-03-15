@@ -1,0 +1,45 @@
+module sin_lut_1024(
+    input wire clk,
+    input wire [9:0] phase,          // 1024 steps
+    output reg signed [15:0] sin_out
+);
+
+wire [1:0] quadrant;
+wire [7:0] index;
+reg  [7:0] lut_addr;
+wire signed [15:0] lut_data;
+
+assign quadrant = phase[9:8];
+assign index    = phase[7:0];
+
+
+// -------- Address mapping --------
+always @(*) begin
+    case(quadrant)
+        2'b00: lut_addr = index;            // Q1
+        2'b01: lut_addr = 8'd255 - index;  // Q2 mirror
+        2'b10: lut_addr = index;            // Q3
+        2'b11: lut_addr = 8'd255 - index;  // Q4 mirror
+    endcase
+end
+
+
+// -------- Quarter-wave ROM --------
+sin_lut quarter_rom (
+    .clk(clk),
+    .addr(lut_addr),
+    .sin_out(lut_data)
+);
+
+
+// -------- Sign correction --------
+always @(posedge clk) begin
+    case(quadrant)
+        2'b00: sin_out <=  lut_data;
+        2'b01: sin_out <=  lut_data;
+        2'b10: sin_out <= -lut_data;
+        2'b11: sin_out <= -lut_data;
+    endcase
+end
+
+endmodule

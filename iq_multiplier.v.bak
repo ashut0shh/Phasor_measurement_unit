@@ -1,0 +1,28 @@
+module iq_multiplier(
+	input wire signed [15:0]signal_in,
+	input wire ip_valid,
+	input clk,
+	input wire signed[15:0]sin_in,
+	input wire signed[15:0]cos_in,
+	output reg iqvalid,
+	output reg signed[31:0]i,
+	output reg signed[31:0]q
+	);
+reg signed [15:0]sig;
+reg signed [15:0]sin_r;
+reg signed [15:0]cos_r;
+reg valid;
+always @(posedge clk)begin
+	sig<=signal_in;
+	sin_r<=sin_in;
+	cos_r<=cos_in;
+	valid<=ip_valid;
+	end
+	
+always @(posedge clk)begin
+	q<=sig*sin;
+	i<=sig*cos;
+	iqvalid<=valid;
+	end
+	endmodule
+	

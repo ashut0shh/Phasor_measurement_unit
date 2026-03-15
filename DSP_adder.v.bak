@@ -1,0 +1,23 @@
+module DSP_adder(
+input clk,
+input wire signed[15:0]shift_out[0:3],
+input wire shift_valid,
+
+output reg valid_adder,
+output reg signed [17:0]sum);
+
+reg signed [16:0]sum1;
+reg signed [16:0]sum2;
+reg temp_valid;
+
+always (@posedge clk) begin
+
+	sum1<=shift_out[0]+shift_out[1];
+	sum2<=shift_out[3]+shift_out[2];
+	
+	sum<=sum1+sum2;
+	
+	temp_valid<=shift_valid;
+	valid_adder<=temp_valid;
+	end
+	endmodule

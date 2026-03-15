@@ -1,0 +1,37 @@
+module moving_avg_lpf(
+    input wire clk,
+    input wire signed [31:0] x_in,
+    input wire valid_in,
+
+    output reg signed [31:0] y_out,
+    output reg valid_out
+);
+
+reg signed [31:0] buffer [0:15];
+reg signed [35:0] acc = 0;   // wider accumulator
+reg [3:0] ptr = 0;
+
+always @(posedge clk) begin
+    if(valid_in) begin
+        // subtract oldest sample
+        acc <= acc - buffer[ptr];
+
+        // store new sample
+        buffer[ptr] <= x_in;
+
+        // add new sample
+        acc <= acc + x_in;
+
+        // move pointer
+        ptr <= ptr + 1;
+
+        // divide by N (shift)
+        y_out <= acc >>> 4;
+
+        valid_out <= 1'b1;
+    end
+    else
+        valid_out <= 1'b0;
+end
+
+endmodule

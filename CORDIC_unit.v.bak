@@ -1,0 +1,64 @@
+module cordic_vectoring #(
+    parameter STAGES = 8
+)(
+    input wire clk,
+    input wire signed [31:0] I_in,
+    input wire signed [31:0] Q_in,
+    input wire valid_in,
+
+    output reg signed [31:0] magnitude,
+    output reg signed [15:0] phase,
+    output reg valid_out
+);
+
+// atan lookup table (scaled)
+reg signed [15:0] atan_table [0:STAGES-1];
+
+initial begin
+    atan_table[0] = 16'sd8192;  // atan(2^0)
+    atan_table[1] = 16'sd4836;
+    atan_table[2] = 16'sd2555;
+    atan_table[3] = 16'sd1297;
+    atan_table[4] = 16'sd651;
+    atan_table[5] = 16'sd326;
+    atan_table[6] = 16'sd163;
+    atan_table[7] = 16'sd81;
+end
+
+// pipeline registers
+reg signed [31:0] x [0:STAGES];
+reg signed [31:0] y [0:STAGES];
+reg signed [15:0] z [0:STAGES];
+reg valid_pipe [0:STAGES];
+
+integer k;
+
+always @(posedge clk) begin
+    // input stage
+    x[0] <= I_in;
+    y[0] <= Q_in;
+    z[0] <= 0;
+    valid_pipe[0] <= valid_in;
+
+    // cordic stages
+    for(k=0;k<STAGES;k=k+1) begin
+        if(y[k] >= 0) begin
+            x[k+1] <= x[k] + (y[k] >>> k);
+            y[k+1] <= y[k] - (x[k] >>> k);
+            z[k+1] <= z[k] + atan_table[k];
+        end
+        else begin
+            x[k+1] <= x[k] - (y[k] >>> k);
+            y[k+1] <= y[k] + (x[k] >>> k);
+            z[k+1] <= z[k] - atan_table[k];
+        end
+
+        valid_pipe[k+1] <= valid_pipe[k];
+    end
+
+    magnitude <= x[STAGES];
+    phase     <= z[STAGES];
+    valid_out <= valid_pipe[STAGES];
+end
+
+endmodule

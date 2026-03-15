@@ -1,0 +1,54 @@
+
+module phase_unwrap #(
+    parameter signed [15:0] PI      = 16'sd512,   // π
+    parameter signed [15:0] TWO_PI  = 16'sd1024   // 2π
+)(
+    input  wire clk,
+    input  wire signed [15:0] phase_in,  // from CORDIC
+    input  wire valid_in,
+
+    output reg  signed [31:0] phase_out, // continuous phase
+    output reg  valid_out
+);
+
+    // previous wrapped phase
+    reg signed [15:0] phase_prev = 0;
+
+    // accumulated unwrap offset (counts number of wraps)
+    reg signed [31:0] unwrap_offset = 0;
+
+    // phase difference
+    reg signed [16:0] delta;
+
+    always @(posedge clk) begin
+        if (valid_in) begin
+
+            // ------------------------------------------------
+            // Compute phase difference
+            // ------------------------------------------------
+            delta = phase_in - phase_prev;
+
+            // ------------------------------------------------
+            // Detect wraparound
+            // ------------------------------------------------
+            if (delta > PI)
+                unwrap_offset <= unwrap_offset - TWO_PI;
+            else if (delta < -PI)
+                unwrap_offset <= unwrap_offset + TWO_PI;
+
+            // ------------------------------------------------
+            // Continuous phase output
+            // ------------------------------------------------
+            phase_out <= unwrap_offset + phase_in;
+
+            // Store previous phase
+            phase_prev <= phase_in;
+
+            valid_out <= 1'b1;
+        end
+        else begin
+            valid_out <= 1'b0;
+        end
+    end
+
+endmodule
